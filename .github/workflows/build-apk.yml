@@ -2,7 +2,7 @@ name: Build and Release OFFGRID Android APK
 
 on:
   push:
-    branches: [ main, fix/apk-download-and-resources ]
+    branches: [ main ]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -18,6 +18,25 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Bundle React Native JS Application
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.js \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res/
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -43,11 +62,6 @@ jobs:
           gradle-version: '8.7'
           cache-disabled: true
 
-      - name: Prepare Assets Directory
-        run: |
-          mkdir -p android/app/src/main/assets
-          touch android/app/src/main/assets/index.android.bundle
-
       - name: Build Android Release APK
         run: |
           cd android
@@ -68,7 +82,7 @@ jobs:
           name: "OFFGRID Latest Release (APK)"
           body: |
             ## OFFGRID Android APK
-            Direct download link for the latest OFFGRID Android release build.
+            Direct download link for the latest working OFFGRID Android release build.
             - **Package**: `app-release.apk`
             - **Commit**: ${{ github.sha }}
           files: android/app/build/outputs/apk/release/*.apk
